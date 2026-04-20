@@ -1,0 +1,218 @@
+---
+import '@fontsource-variable/inter';
+---
+
+<html lang="no">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="theme-color" content="#ffffff" />
+		<meta name="description" content="Heidi Suul er illustratør, grafisk designer og tegneserieskaper basert i Norge. Se arbeider innen illustrasjon, grafisk design og tegneserier." />
+		<link rel="canonical" href="https://www.heidisuul.com/" />
+		<title>Heidi Suul – Illustratør, grafisk designer og tegneserieskaper</title>
+
+		<!-- Open Graph -->
+		<meta property="og:type" content="website" />
+		<meta property="og:locale" content="nb_NO" />
+		<meta property="og:site_name" content="Heidi Suul" />
+		<meta property="og:title" content="Heidi Suul – Illustratør, grafisk designer og tegneserieskaper" />
+		<meta property="og:description" content="Heidi Suul er illustratør, grafisk designer og tegneserieskaper basert i Norge. Se arbeider innen illustrasjon, grafisk design og tegneserier." />
+		<meta property="og:url" content="https://www.heidisuul.com/" />
+		<meta property="og:image" content="https://www.heidisuul.com/heidisuul_logo.png" />
+
+		<!-- Twitter Card -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Heidi Suul – Illustratør, grafisk designer og tegneserieskaper" />
+		<meta name="twitter:description" content="Heidi Suul er illustratør, grafisk designer og tegneserieskaper basert i Norge. Se arbeider innen illustrasjon, grafisk design og tegneserier." />
+		<meta name="twitter:image" content="https://www.heidisuul.com/heidisuul_logo.png" />
+
+		<!-- JSON-LD -->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "Person",
+			"name": "Heidi Suul",
+			"url": "https://www.heidisuul.com",
+			"image": "https://www.heidisuul.com/heidisuul_logo.png",
+			"jobTitle": ["Illustratør", "Grafisk designer", "Tegneserieskaper"],
+			"sameAs": [
+				"https://www.instagram.com/heidisuuldesign/",
+				"https://www.instagram.com/panserlugg/",
+				"https://www.linkedin.com/in/heidisuul/"
+			]
+		}
+		</script>
+	</head>
+	<body>
+		<main>
+			<header>
+				<h1><img src="/heidisuul_logo.png" alt="Heidi Suul" class="logo" /></h1>
+			</header>
+
+			<section class="intro">
+				<h2 class="sr-only">Illustrasjon, grafisk design og tegneserier</h2>
+				<p>Hei! Jeg heter Heidi og jobber med illustrasjon, grafisk design og tegneserier. Vil du se mer kan du klikke deg videre på linkene:</p>
+			</section>
+
+			<nav>
+				<a href="https://www.instagram.com/heidisuuldesign/" class="nav-item" target="_blank" rel="noopener noreferrer">
+					<div class="circle"></div>
+					<span>Design</span>
+				</a>
+				<a href="https://www.instagram.com/panserlugg/" class="nav-item" target="_blank" rel="noopener noreferrer">
+					<div class="circle"></div>
+					<span>Tegneserier</span>
+				</a>
+				<a href="https://www.linkedin.com/in/heidisuul/" class="nav-item" target="_blank" rel="noopener noreferrer">
+					<div class="circle"></div>
+					<span>LinkedIn</span>
+				</a>
+			</nav>
+
+			<footer>
+				<p>Kontakt: heidisuul at gmail.com</p>
+			</footer>
+		</main>
+	</body>
+</html>
+
+<style>
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border-width: 0;
+	}
+
+	*, *::before, *::after {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	html, body {
+		height: 100%;
+	}
+
+	body {
+		background: #ffffff;
+		color: #1a1a1a;
+		font-family: 'Inter Variable', 'Inter', sans-serif;
+		font-size: 16px;
+		line-height: 1.6;
+	}
+
+	main {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+		max-width: 480px;
+		margin: 0 auto;
+	}
+
+	header {
+		margin-bottom: 2rem;
+	}
+
+	header h1 {
+		margin: 0;
+		padding: 0;
+		font-size: 0;
+		line-height: 0;
+	}
+
+	.logo {
+		width: 160px;
+		height: auto;
+		display: block;
+	}
+
+	.intro {
+		text-align: center;
+		max-width: 380px;
+		margin-bottom: 2.5rem;
+	}
+
+	.intro p {
+		font-size: 0.95rem;
+		line-height: 1.65;
+		color: #1a1a1a;
+		text-wrap: pretty;
+	}
+
+	nav {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		gap: 1.5rem;
+		margin-bottom: auto;
+		padding-bottom: 3rem;
+	}
+
+	.nav-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.6rem;
+		text-decoration: none;
+		color: #1a1a1a;
+	}
+
+	.circle {
+		width: 88px;
+		height: 88px;
+		border-radius: 50%;
+		background-color: #d8d8d8;
+		transition: background-color 0.2s ease;
+	}
+
+	.nav-item:hover .circle {
+		background-color: #c4c4c4;
+	}
+
+	.nav-item span {
+		font-size: 0.9rem;
+		text-align: center;
+		text-wrap: balance;
+	}
+
+	footer {
+		margin-top: auto;
+		padding-top: 2rem;
+	}
+
+	footer p {
+		font-size: 0.85rem;
+		color: #555;
+		text-align: center;
+	}
+
+	@media (min-width: 600px) {
+		.logo {
+			width: 200px;
+		}
+
+		.intro p {
+			font-size: 1rem;
+		}
+
+		nav {
+			gap: 2.5rem;
+		}
+
+		.circle {
+			width: 100px;
+			height: 100px;
+		}
+	}
+</style>
