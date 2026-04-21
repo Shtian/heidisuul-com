@@ -1,0 +1,148 @@
+---
+---
+
+<svg id="scribbles-layer" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"></svg>
+
+<script>
+  const PATHS: string[] = [
+    // Simple S-swoosh
+    "M 10,55 C 60,5 160,75 240,40 C 320,5 370,55 390,45",
+    // Swoosh with right-end loop
+    "M 10,45 C 80,5 160,75 240,40 C 300,15 340,15 360,30 C 375,40 380,58 368,63 C 356,68 344,55 358,45 C 368,38 382,35 385,40",
+    // Left-loop into rightward sweep
+    "M 65,35 C 65,20 80,10 95,15 C 110,20 112,40 98,47 C 84,54 68,46 68,35 C 68,18 92,8 120,22 C 175,48 285,62 390,35",
+    // Horizontal double-hump (figure-8 open)
+    "M 10,40 C 50,5 110,5 140,40 C 170,75 230,75 260,40 C 290,5 350,5 390,40",
+    // Tilde with upward tail curl at right
+    "M 10,50 C 40,20 80,20 110,50 C 140,80 180,20 220,45 C 260,70 300,50 340,45 C 365,42 385,35 388,25 C 391,15 385,8 378,12",
+    // Top-loop flourish into trailing sweep
+    "M 22,58 C 50,22 80,5 100,14 C 120,23 116,52 98,59 C 80,66 64,56 72,43 C 84,22 160,8 232,40 C 304,72 352,56 390,50",
+  ];
+
+  const VB_W = 400;
+  const VB_H = 80;
+  const MAX_CONCURRENT = 2;
+  const HOLD_MS = 300;
+
+  const layer = document.getElementById("scribbles-layer") as SVGSVGElement | null;
+  if (!layer) throw new Error("scribbles-layer not found");
+
+  let active = 0;
+  let pendingTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function rand(min: number, max: number): number {
+    return min + Math.random() * (max - min);
+  }
+
+  function spawnScribble(): void {
+    if (active >= MAX_CONCURRENT) return;
+
+    const d = PATHS[Math.floor(Math.random() * PATHS.length)];
+    const width = rand(180, 380);
+    const height = (width / VB_W) * VB_H;
+    const angle = rand(-15, 15);
+    const x = rand(0, Math.max(0, window.innerWidth - width));
+    const y = rand(0, Math.max(0, window.innerHeight - height));
+    const strokeWidth = rand(1.8, 2.6);
+    const drawDur = rand(1500, 2500);
+    const fadeDur = rand(1500, 2500);
+
+    const ns = "http://www.w3.org/2000/svg";
+
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute(
+      "transform",
+      `translate(${x},${y}) rotate(${angle}, ${width / 2}, ${height / 2})`
+    );
+
+    const inner = document.createElementNS(ns, "svg");
+    inner.setAttribute("viewBox", `0 0 ${VB_W} ${VB_H}`);
+    inner.setAttribute("width", String(width));
+    inner.setAttribute("height", String(height));
+    inner.setAttribute("overflow", "visible");
+
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "rgba(0,0,0,0.28)");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("stroke-width", String(strokeWidth));
+
+    inner.appendChild(path);
+    g.appendChild(inner);
+    layer.appendChild(g);
+
+    active++;
+
+    const length = path.getTotalLength();
+    path.setAttribute("stroke-dasharray", String(length));
+    path.setAttribute("stroke-dashoffset", String(length));
+
+    const draw = path.animate(
+      [{ strokeDashoffset: length }, { strokeDashoffset: 0 }],
+      { duration: drawDur, easing: "ease-out", fill: "forwards" }
+    );
+
+    draw.onfinish = () => {
+      setTimeout(() => {
+        const fade = g.animate(
+          [{ opacity: 1 }, { opacity: 0 }],
+          { duration: fadeDur, easing: "ease-in", fill: "forwards" }
+        );
+        fade.onfinish = () => {
+          g.remove();
+          active--;
+        };
+      }, HOLD_MS);
+    };
+  }
+
+  function scheduleNext(first = false): void {
+    const delay = first ? rand(2000, 4000) : rand(8000, 20000);
+    pendingTimeout = setTimeout(() => {
+      if (!document.hidden) spawnScribble();
+      scheduleNext();
+    }, delay);
+  }
+
+  function pause(): void {
+    if (pendingTimeout !== null) {
+      clearTimeout(pendingTimeout);
+      pendingTimeout = null;
+    }
+  }
+
+  function resume(): void {
+    if (pendingTimeout === null) scheduleNext();
+  }
+
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  if (!mq.matches) {
+    scheduleNext(true);
+    document.addEventListener("visibilitychange", () => {
+      document.hidden ? pause() : resume();
+    });
+  }
+
+  mq.addEventListener("change", (e) => {
+    if (e.matches) {
+      pause();
+    } else if (pendingTimeout === null) {
+      scheduleNext(true);
+    }
+  });
+</script>
+
+<style>
+  #scribbles-layer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: visible;
+  }
+</style>

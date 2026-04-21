@@ -1,5 +1,6 @@
 ---
 import '@fontsource-variable/inter';
+import Scribbles from '../components/Scribbles.astro';
 ---
 
 <html lang="no">
@@ -47,6 +48,7 @@ import '@fontsource-variable/inter';
 		</script>
 	</head>
 	<body>
+		<Scribbles />
 		<main>
 			<header>
 				<h1><img src="/heidisuul_header.png" alt="Heidi Suul" class="logo" width="278" height="266" /></h1>
@@ -118,6 +120,8 @@ import '@fontsource-variable/inter';
 		padding: 2.5rem 1.5rem;
 		max-width: 480px;
 		margin: 0 auto;
+		position: relative;
+		z-index: 1;
 	}
 
 	header {
