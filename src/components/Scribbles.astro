@@ -24,7 +24,7 @@
   const MAX_CONCURRENT = 2;
   const HOLD_MS = 300;
 
-  const layer = document.getElementById("scribbles-layer") as SVGSVGElement | null;
+  const layer = document.getElementById("scribbles-layer");
   if (!layer) throw new Error("scribbles-layer not found");
 
   let active = 0;
@@ -71,7 +71,7 @@
 
     inner.appendChild(path);
     g.appendChild(inner);
-    layer.appendChild(g);
+    layer!.appendChild(g);
 
     active++;
 

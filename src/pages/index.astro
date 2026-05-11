@@ -1,5 +1,5 @@
 ---
-import '@fontsource-variable/inter';
+import '@fontsource-variable/inter/index.css';
 import Scribbles from '../components/Scribbles.astro';
 ---
 
@@ -31,7 +31,7 @@ import Scribbles from '../components/Scribbles.astro';
 		<meta name="twitter:image" content="https://www.heidisuul.com/heidisuul_og.png" />
 
 		<!-- JSON-LD -->
-		<script type="application/ld+json">
+		<script is:inline type="application/ld+json">
 		{
 			"@context": "https://schema.org",
 			"@type": "Person",
