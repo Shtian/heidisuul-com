@@ -4,7 +4,10 @@
 <svg id="scribbles-layer" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"></svg>
 
 <script>
-  const PATHS: string[] = [
+  type Sprite = { subpaths: string[]; vbW: number; vbH: number };
+
+  // Long hand-drawn swooshes (viewBox 400x80)
+  const SWOOSH_PATHS: string[] = [
     // Simple S-swoosh
     "M 10,55 C 60,5 160,75 240,40 C 320,5 370,55 390,45",
     // Swoosh with right-end loop
@@ -19,120 +22,260 @@
     "M 22,58 C 50,22 80,5 100,14 C 120,23 116,52 98,59 C 80,66 64,56 72,43 C 84,22 160,8 232,40 C 304,72 352,56 390,50",
   ];
 
-  const VB_W = 400;
-  const VB_H = 80;
-  const MAX_CONCURRENT = 2;
-  const HOLD_MS = 300;
+  // Small pictorial doodles (viewBox 100x100), one or more strokes each
+  const SHAPE_PATHS: string[][] = [
+    // Star
+    ["M50,10 C52,25 56,36 62,40 C71,41 81,41 90,42 C81,50 73,57 69,63 C71,72 74,82 76,90 C67,84 57,78 50,76 C43,78 33,84 24,90 C26,82 29,72 31,63 C27,57 19,50 10,42 C19,41 29,41 38,40 C44,36 48,25 50,10"],
+    // Spiral
+    ["M52,48 C56,52 50,58 44,54 C36,49 40,38 50,36 C63,33 72,45 66,56 C59,70 38,70 30,56 C21,41 33,22 52,22 C74,22 86,42 78,60"],
+    // Heart
+    ["M50,84 C28,64 14,48 20,32 C26,18 44,18 50,34 C56,18 74,18 80,32 C86,48 72,64 50,84"],
+    // Flower
+    [
+      "M50,41 C59,41 59,59 50,59 C41,59 41,41 50,41",
+      "M50,39 C36,34 36,8 50,8 C64,8 64,34 50,39",
+      "M61,50 C66,36 92,36 92,50 C92,64 66,64 61,50",
+      "M50,61 C64,66 64,92 50,92 C36,92 36,66 50,61",
+      "M39,50 C34,64 8,64 8,50 C8,36 34,36 39,50",
+    ],
+    // Sun
+    [
+      "M50,30 C62,30 70,38 70,50 C70,62 62,70 50,70 C38,70 30,62 30,50 C30,38 38,30 50,30",
+      "M50,20 L50,8", "M71,29 L80,20", "M80,50 L92,50", "M71,71 L80,80",
+      "M50,80 L50,92", "M29,71 L20,80", "M20,50 L8,50", "M29,29 L20,20",
+    ],
+    // Lightning bolt
+    ["M58,10 C50,24 42,38 34,52 L50,52 C47,65 44,78 41,88 C51,74 61,60 70,46 L54,46 C55,34 57,22 58,10"],
+    // Four-point sparkle
+    ["M50,14 C52,36 58,44 84,50 C58,56 52,64 50,86 C48,64 42,56 16,50 C42,44 48,36 50,14"],
+    // Cloud
+    ["M30,64 C16,64 12,48 26,44 C26,30 42,24 50,34 C56,24 74,26 74,40 C88,40 90,58 76,62 C62,68 42,68 30,64"],
+    // Music note
+    ["M42,72 C42,64 54,64 54,72 C54,80 42,80 42,72", "M54,72 L54,26 C62,30 70,32 72,42"],
+    // Curved arrow
+    ["M14,72 C28,44 56,32 84,38", "M84,38 L68,32", "M84,38 L74,52"],
+    // Smiley
+    [
+      "M50,12 C72,12 88,28 88,50 C88,72 72,88 50,88 C28,88 12,72 12,50 C12,28 28,12 50,12",
+      "M38,40 C38,44 38,46 38,48", "M62,40 C62,44 62,46 62,48",
+      "M34,60 C42,70 58,70 66,60",
+    ],
+    // Loop-de-loop swirl
+    ["M12,80 C30,60 20,40 38,28 C50,20 64,26 62,38 C60,48 46,48 46,38 C46,26 62,14 78,22 C90,28 92,44 84,54"],
+  ];
+
+  const SWOOSHES: Sprite[] = SWOOSH_PATHS.map((d) => ({ subpaths: [d], vbW: 400, vbH: 80 }));
+  const SHAPES: Sprite[] = SHAPE_PATHS.map((subpaths) => ({ subpaths, vbW: 100, vbH: 100 }));
+
+  const PALETTE = [
+    "#EF6461", // coral
+    "#E86BA0", // pink
+    "#E09424", // marigold
+    "#3AA6A6", // teal
+    "#5B9FD4", // sky blue
+    "#8B6FC0", // lilac
+    "#67B26F", // leaf green
+  ];
+
+  const NS = "http://www.w3.org/2000/svg";
 
   const layer = document.getElementById("scribbles-layer");
   if (!layer) throw new Error("scribbles-layer not found");
-
-  let active = 0;
-  let pendingTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function rand(min: number, max: number): number {
     return min + Math.random() * (max - min);
   }
 
-  function spawnScribble(): void {
-    if (active >= MAX_CONCURRENT) return;
+  function pick<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
-    const d = PATHS[Math.floor(Math.random() * PATHS.length)];
-    const width = rand(180, 380);
-    const height = (width / VB_W) * VB_H;
-    const angle = rand(-15, 15);
-    const x = rand(0, Math.max(0, window.innerWidth - width));
-    const y = rand(0, Math.max(0, window.innerHeight - height));
-    const strokeWidth = rand(1.8, 2.6);
-    const drawDur = rand(1500, 2500);
-    const fadeDur = rand(1500, 2500);
+  function shuffle<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
 
-    const ns = "http://www.w3.org/2000/svg";
+  interface SpriteInstance {
+    g: SVGGElement;
+    paths: SVGPathElement[];
+  }
 
-    const g = document.createElementNS(ns, "g");
-    g.setAttribute(
-      "transform",
-      `translate(${x},${y}) rotate(${angle}, ${width / 2}, ${height / 2})`
-    );
+  function makeSprite(
+    sprite: Sprite,
+    opts: { size: number; color: string; pxStroke: number; opacity: number; x: number; y: number; angle: number }
+  ): SpriteInstance {
+    const { size, color, pxStroke, opacity, x, y, angle } = opts;
+    const height = (size / sprite.vbW) * sprite.vbH;
 
-    const inner = document.createElementNS(ns, "svg");
-    inner.setAttribute("viewBox", `0 0 ${VB_W} ${VB_H}`);
-    inner.setAttribute("width", String(width));
+    const g = document.createElementNS(NS, "g") as SVGGElement;
+    g.setAttribute("transform", `translate(${x},${y}) rotate(${angle}, ${size / 2}, ${height / 2})`);
+    g.setAttribute("opacity", String(opacity));
+
+    const inner = document.createElementNS(NS, "svg");
+    inner.setAttribute("viewBox", `0 0 ${sprite.vbW} ${sprite.vbH}`);
+    inner.setAttribute("width", String(size));
     inner.setAttribute("height", String(height));
     inner.setAttribute("overflow", "visible");
 
-    const path = document.createElementNS(ns, "path");
-    path.setAttribute("d", d);
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", "rgba(0,0,0,0.28)");
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-linejoin", "round");
-    path.setAttribute("stroke-width", String(strokeWidth));
+    const paths = sprite.subpaths.map((d) => {
+      const p = document.createElementNS(NS, "path") as SVGPathElement;
+      p.setAttribute("d", d);
+      p.setAttribute("fill", "none");
+      p.setAttribute("stroke", color);
+      p.setAttribute("stroke-linecap", "round");
+      p.setAttribute("stroke-linejoin", "round");
+      // stroke-width lives in viewBox units; convert so it renders as pxStroke on screen
+      p.setAttribute("stroke-width", String((pxStroke * sprite.vbW) / size));
+      inner.appendChild(p);
+      return p;
+    });
 
-    inner.appendChild(path);
     g.appendChild(inner);
-    layer!.appendChild(g);
+    return { g, paths };
+  }
 
-    active++;
-
-    const length = path.getTotalLength();
-    path.setAttribute("stroke-dasharray", String(length));
-    path.setAttribute("stroke-dashoffset", String(length));
-
-    const draw = path.animate(
-      [{ strokeDashoffset: length }, { strokeDashoffset: 0 }],
-      { duration: drawDur, easing: "ease-out", fill: "forwards" }
+  function drawIn(paths: SVGPathElement[], totalDur: number): Promise<void> {
+    const lengths = paths.map((p) => p.getTotalLength());
+    const total = lengths.reduce((a, b) => a + b, 0) || 1;
+    paths.forEach((p, i) => {
+      p.setAttribute("stroke-dasharray", String(lengths[i]));
+      p.setAttribute("stroke-dashoffset", String(lengths[i]));
+    });
+    return paths.reduce(
+      (chain, p, i) =>
+        chain.then(
+          () =>
+            new Promise<void>((resolve) => {
+              const anim = p.animate(
+                [{ strokeDashoffset: lengths[i] }, { strokeDashoffset: 0 }],
+                { duration: Math.max(140, (totalDur * lengths[i]) / total), easing: "ease-out", fill: "forwards" }
+              );
+              anim.onfinish = () => resolve();
+            })
+        ),
+      Promise.resolve()
     );
-
-    draw.onfinish = () => {
-      setTimeout(() => {
-        const fade = g.animate(
-          [{ opacity: 1 }, { opacity: 0 }],
-          { duration: fadeDur, easing: "ease-in", fill: "forwards" }
-        );
-        fade.onfinish = () => {
-          g.remove();
-          active--;
-        };
-      }, HOLD_MS);
-    };
   }
 
-  function scheduleNext(first = false): void {
-    const delay = first ? rand(2000, 4000) : rand(8000, 20000);
-    pendingTimeout = setTimeout(() => {
-      if (!document.hidden) spawnScribble();
-      scheduleNext();
-    }, delay);
-  }
-
-  function pause(): void {
-    if (pendingTimeout !== null) {
-      clearTimeout(pendingTimeout);
-      pendingTimeout = null;
-    }
-  }
-
-  function resume(): void {
-    if (pendingTimeout === null) scheduleNext();
-  }
-
-  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-  if (!mq.matches) {
-    scheduleNext(true);
-    document.addEventListener("visibilitychange", () => {
-      document.hidden ? pause() : resume();
+  function fadeOut(el: SVGGElement, dur: number): Promise<void> {
+    return new Promise((resolve) => {
+      const anim = el.animate([{ opacity: 0 }], { duration: dur, easing: "ease-in", fill: "forwards" });
+      anim.onfinish = () => resolve();
     });
   }
 
-  mq.addEventListener("change", (e) => {
-    if (e.matches) {
-      pause();
-    } else if (pendingTimeout === null) {
-      scheduleNext(true);
+  // Ephemeral colorful strokes: swooshes and pictorial doodles draw in, linger, fade away
+  function strokesEngine(): () => void {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let active = 0;
+
+    function spawn(): void {
+      if (stopped || active >= 3) return;
+      const useSwoosh = Math.random() < 0.45;
+      const sprite = useSwoosh ? pick(SWOOSHES) : pick(SHAPES);
+      const size = useSwoosh ? rand(200, 380) : rand(60, 130);
+      const height = (size / sprite.vbW) * sprite.vbH;
+
+      const instance = makeSprite(sprite, {
+        size,
+        color: pick(PALETTE),
+        pxStroke: rand(2.2, 3.2),
+        opacity: 0.55,
+        x: rand(8, Math.max(9, window.innerWidth - size - 8)),
+        y: rand(8, Math.max(9, window.innerHeight - height - 8)),
+        angle: rand(-14, 14),
+      });
+      layer!.appendChild(instance.g);
+      active++;
+
+      const drawDur = (useSwoosh ? rand(1400, 2200) : rand(900, 1500)) + sprite.subpaths.length * 80;
+      drawIn(instance.paths, drawDur)
+        .then(() => new Promise((r) => setTimeout(r, rand(1500, 3500))))
+        .then(() => fadeOut(instance.g, rand(1200, 2000)))
+        .then(() => {
+          instance.g.remove();
+          active--;
+        });
     }
+
+    function loop(first = false): void {
+      timer = setTimeout(() => {
+        if (!document.hidden) spawn();
+        loop();
+      }, first ? rand(800, 2000) : rand(3500, 9000));
+    }
+
+    loop(true);
+    return () => {
+      stopped = true;
+      if (timer !== null) clearTimeout(timer);
+    };
+  }
+
+  // Reduced motion: a static scatter of doodles — colorful but perfectly still.
+  // Kept away from the centered content column on wide screens.
+  function staticScatter(): () => void {
+    const narrow = window.innerWidth < 760;
+    const band = narrow ? 0 : 280;
+    const cellSize = narrow ? 150 : 170;
+    const cols = Math.max(1, Math.floor(window.innerWidth / cellSize));
+    const rows = Math.max(1, Math.floor(window.innerHeight / cellSize));
+    const cw = window.innerWidth / cols;
+    const ch = window.innerHeight / rows;
+
+    const cells: { x: number; y: number }[] = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (band && Math.abs((c + 0.5) * cw - window.innerWidth / 2) < band) continue;
+        cells.push({ x: c * cw, y: r * ch });
+      }
+    }
+
+    const target = Math.min(
+      cells.length,
+      Math.max(6, Math.round((window.innerWidth * window.innerHeight) / 110000))
+    );
+    for (const cell of shuffle(cells).slice(0, target)) {
+      const size = rand(narrow ? 30 : 36, narrow ? 56 : 70);
+      const instance = makeSprite(pick(SHAPES), {
+        size,
+        color: pick(PALETTE),
+        pxStroke: rand(2, 2.8),
+        opacity: narrow ? 0.3 : 0.42,
+        x: cell.x + rand(6, Math.max(7, cw - size - 12)),
+        y: cell.y + rand(6, Math.max(7, ch - size - 12)),
+        angle: rand(-18, 18),
+      });
+      layer!.appendChild(instance.g);
+    }
+
+    return () => {};
+  }
+
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let stop: (() => void) | null = null;
+
+  function boot(): void {
+    stop?.();
+    layer!.replaceChildren();
+    stop = mq.matches ? staticScatter() : strokesEngine();
+  }
+
+  mq.addEventListener("change", boot);
+
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  window.addEventListener("resize", () => {
+    if (!mq.matches) return;
+    if (resizeTimer !== null) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(boot, 350);
   });
+
+  boot();
 </script>
 
 <style>
